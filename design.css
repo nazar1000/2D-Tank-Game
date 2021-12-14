@@ -1,0 +1,14 @@
+body {
+
+
+}
+
+body #nav-container {
+	float: left;
+	width: 10%;
+	background-color: red;
+}
+
+canvas {
+	background-color: grey;
+}
