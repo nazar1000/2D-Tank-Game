@@ -4,7 +4,7 @@
 const canvas = document.getElementsByTagName("canvas")[0];
 const ctx = canvas.getContext("2d");
 canvas.width = 900;
-canvas.height = 700;
+canvas.height = 900;
 
 
 var state = {
@@ -154,13 +154,30 @@ class Map {
                 player2.y = 200;
             }
 
+            let gridX = 25;
+            let gridY = 25;
+            let gridWidth = canvas.width / gridX;
+            let gridHeight = canvas.height / gridY;
+            let repeat = false;
 
-            for (let i = 0; i < 10; i++) {
-                let wallWidth = Math.floor(Math.random() * 100);
-                let wallHeight = Math.floor(Math.random() * 100);
-                let wallX = Math.floor(Math.random() * canvas.width - wallWidth);
-                let wallY = Math.floor(Math.random() * canvas.height - wallHeight);
-                walls.push(new Wall(wallX, wallY, wallWidth, wallHeight));
+            for (let i = 0; i < 50; i++) {
+                let randomX = Math.floor(Math.random() * gridX);
+                let randomY = Math.floor(Math.random() * gridY);
+
+                for (let w = 0; w < walls.length; w++) {
+                    if (walls[w].x == randomX && walls[w].y == randomY) {
+                        i--;
+                        repeat = true;
+                        break;
+                    }
+
+                }
+
+                if (repeat) {
+                    repeat = false;
+                    continue;
+                }
+                walls.push(new Wall(randomX * gridWidth, randomY * gridHeight, gridWidth, gridHeight));
             }
 
             this.isReady = true;
@@ -370,6 +387,74 @@ class Handler {
 
         for (let w = 0; w < walls.length; w++) {
             walls[w].draw(); //updates walls
+            let ls = walls[w];
+
+            // let collision = checkCollision(player1.x, player1.y, player1.width, player1.height, walls[w].x, walls[w].y, walls[w].width, walls[w].height);
+            // if (collision == 1) player1.x = (walls[w].x - player1.width)//right
+            // else if (collision == 2) player1.x = (walls[w].x + walls[w].width)//right
+
+            // if (overlaps(player1.x, player1.y, player1.width, player1.height, walls[w].x, walls[w].y, walls[w].width, walls[w].height)) {
+            //     let xDis = player1.x + player1.width / 2 - walls[w].x + walls[w].width / 2;
+            //     let yDis = player1.y + player1.height / 2 - walls[w].y + walls[w].height / 2;
+            //     console.log("ovelaps");
+
+            //     if (Math.abs(xDis) < Math.abs(yDis)) {
+            //         if (xDis > 0) player1.y = walls[w].y + walls[w].height;//left collision //top
+
+            //         else if (xDis < 0) player1.x = walls[w].x - player1.width;//right collision
+            //     } else if (Math.abs(xDis) > Math.abs(yDis)) {
+            //         if (yDis > 0); //top collision
+            //         else if (yDis < 0) player1.y = walls[w].y - player1.width;//bottom collision
+
+            //         player1.x = walls[w].x + walls[w].width;//left collision
+            //     }
+            // }
+
+            if (player1.x + player1.width < ls.x + 5) {//on the left (player)
+                if (player1.x > ls.x - player1.width && //player width is touching
+                    player1.y > ls.y - player1.height && player1.y < ls.y + ls.height) {
+                    console.log("left");
+                    player1.x = ls.x - player1.width;
+
+                }
+            }
+            else if (player1.x > ls.x + ls.width - 5) {//on the right (player)
+                if (player1.x < ls.x + ls.width && //player width is touching
+                    player1.y > ls.y - player1.height && player1.y < ls.y + ls.height) {
+                    console.log("right");
+                    player1.x = ls.x + ls.width + 1;
+                    if (player1.x == ls.x + ls.width) console.log("true");
+                }
+            }
+
+
+            if (player1.y + player1.height < ls.y + 5) { //top (player)
+                if (player1.y > ls.y - player1.height &&
+                    player1.x > ls.x - player1.width && player1.x < ls.x + ls.height) {
+                    console.log("top");
+                    player1.y = ls.y - player1.height;
+                }
+            }
+
+            else if (player1.y > ls.y + ls.height - 5) { //bottom (player)
+                if (player1.y < ls.y + ls.height && //player width is touching
+                    player1.x > ls.x - player1.width && player1.x < ls.x + ls.width) {
+                    console.log("Bottom");
+                    player1.y = ls.y + ls.height;
+                }
+            }
+
+            // if (player1.x >= ls.x && player1.x + player1.width <= ls.x + ls.width) {//width matches (bigger)
+            //     if (player1.y + player1.height >= ls.y && player1.y + player1.height < ls.y + ls.height) {
+            //         //bottom collision
+            //         console.log("bottom");
+
+            //     } else if (player1.y <= ls.y + ls.height && player1.y > ls.y) {
+            //         //top collision
+            //         console.log("top");
+
+            //     }
+            // }
         }
 
     }
@@ -488,13 +573,55 @@ function overlaps(x, y, w, h, rX, rY, rW, rH) {
 // add colision for sidesssssssssssssssssssssssssssssssssssss
 
 //checks one side only for collision (in case of diffrent size obsticles)
-function checkCollision(x, y, w, h, rX, rY, rW, rH) {
-    if (y + h <= ry && y + h > ry + rH) {
-        //bottom collision
+function checkCollision(x, y, w, h, x1, y1, w1, h1) {
 
-    } else if (y < ry + rH && y + h > ry + rh) {
-        //top collision
+    // if (x + w > rx && x + w < rx + rw) {//collision on the left (right for colider)
+    //     if (y + rh - Math.abs(y - ry) > y || y < ry && y + h > ry + rh) {
+    //         console.log("collision on right");
+    //     }
+
+    // }
+    // if (x < rx + rw && x > rx) {//collision on the right (left for colider)
+    //     if (y + rh - Math.abs(y - ry) > y || y < ry && y + h > ry + rh) {
+    //         console.log("collision on Left");
+    //     }
+    // }
+
+    // if (y + rh - Math.abs(y - ry) > y || y < ry && y + h > ry + rh) { //if height is matched
+    //     if (x + w > rx && x + w < rx + rw) {//collision on the left (right for colider)
+    //         console.log("collision on right");
+    //         return 1;
+    //     } else if (x < rx + rw && x > rx) {//collision on the right (left for colider)
+    //         console.log("collision on Left");
+    //         return 2;
+    //     }
+    // }
+
+    if ((y <= y1 && y + h >= y1 + h1) || (y > y1 && y + h < y1 + h1) || (y > y1 && y + h > y1 + h1 && y <= y1 + h1) || y < y1 && y + h < y1 + h1 && y + h >= y1) { //if height is matched
+        if ((x >= x1 && x + w <= x1 + w1) ||
+            (x < x1 && x + w > x1 + w1)) { //collision at the top (bottom for colider)
+            console.log("collision on Bottom");
+        }
+
+        else if (x + w > x1 && x + w < x1 + w1) {//collision on the left (right for colider)
+            console.log("collision on right");
+            return 1;
+        } else if (x < x1 + w1 && x > x1) {//collision on the right (left for colider)
+            console.log("collision on Left");
+            return 2;
+        }
     }
+
+
+
+    // if (y < ry + rh && y > ry) {//collision on buttom (top for colider)
+    //     if (x + rx - Math.abs(x - rx) > x || x < rx && x + w > rx + rx) {
+    //         console.log("collision on Top");
+    //     }
+    // }
+    // if (y+h > ry && y+h < ry+rh) { //collision on top (bottom for colider)
+
+    // }
 }
 
 
