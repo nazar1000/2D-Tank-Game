@@ -107,7 +107,7 @@ document.addEventListener("keyup", function (event) {
 
 class Menu {
     constructor() {
-
+        this.bulletBouncing = true;
     }
 
     update() {
@@ -146,8 +146,8 @@ class Map {
 
     update() {
         if (!this.isReady) {
-            player1.x = 0;
-            player1.y = 0;
+            player1.x = 500;
+            player1.y = 500;
 
             if (state.gamemode == "2player") {
                 player2.x = 200;
@@ -160,25 +160,51 @@ class Map {
             let gridHeight = canvas.height / gridY;
             let repeat = false;
 
-            for (let i = 0; i < 50; i++) {
-                let randomX = Math.floor(Math.random() * gridX);
-                let randomY = Math.floor(Math.random() * gridY);
+            //random map generator
+            if (false) {
+                for (let i = 0; i < 50; i++) {
+                    let randomX = Math.floor(Math.random() * gridX);
+                    let randomY = Math.floor(Math.random() * gridY);
 
-                for (let w = 0; w < walls.length; w++) {
-                    if (walls[w].x == randomX && walls[w].y == randomY) {
-                        i--;
-                        repeat = true;
-                        break;
+                    for (let w = 0; w < walls.length; w++) {
+                        if (walls[w].x == randomX && walls[w].y == randomY) {
+                            i--;
+                            repeat = true;
+                            break;
+                        }
+
                     }
 
+                    if (repeat) {
+                        repeat = false;
+                        continue;
+                    }
+                    walls.push(new Wall(randomX * gridWidth, randomY * gridHeight, gridWidth, gridHeight));
                 }
-
-                if (repeat) {
-                    repeat = false;
-                    continue;
-                }
-                walls.push(new Wall(randomX * gridWidth, randomY * gridHeight, gridWidth, gridHeight));
             }
+
+            //generate map
+            // for (let y = 0; y < map2.length; y++) {
+            //     for (let x = 0; x < map2[y].length; x++) {
+            //         if (map2[y][x] == 1) walls.push(new Wall(x * gridWidth, y * gridHeight, gridWidth, gridHeight));
+            //         else continue;
+
+            //     }
+            // }
+
+            //preDefined
+            walls.push(new Wall(0, 0, canvas.width, gridHeight));
+            walls.push(new Wall(gridWidth * 4, gridHeight * 4, gridWidth * 17, gridHeight));
+            walls.push(new Wall(gridWidth * 4, gridHeight * 8, gridWidth * 17, gridHeight));
+            walls.push(new Wall(gridWidth * 4, gridHeight * 12, gridWidth * 17, gridHeight));
+            walls.push(new Wall(gridWidth * 4, gridHeight * 16, gridWidth * 17, gridHeight));
+            walls.push(new Wall(gridWidth * 4, gridHeight * 20, gridWidth * 17, gridHeight));
+            walls.push(new Wall(0, canvas.height - gridHeight, canvas.width, gridHeight));
+
+            walls.push(new Wall(0, gridHeight * 1, gridWidth, canvas.height - 2 * gridHeight));
+            walls.push(new Wall(canvas.width - gridWidth, gridHeight * 1, gridWidth, canvas.height - 2 * gridHeight));
+            // walls.push(new Wall(500, 100, 300, 300));
+
 
             this.isReady = true;
         }
@@ -192,26 +218,7 @@ class Map {
     }
 }
 
-class Wall {
-    constructor(x, y, w, h) {
-        this.x = x,
-            this.y = y,
-            this.width = w,
-            this.height = h;
-    }
 
-    update() {
-
-    }
-
-    draw() {
-        ctx.beginPath()
-
-        ctx.fillStyle = "black";
-        ctx.rect(this.x, this.y, this.width, this.height);
-        ctx.fill();
-    }
-}
 
 class Player {
     constructor(player) {
@@ -222,7 +229,7 @@ class Player {
         this.player = player; //player 1 or 2
         this.angle = 1.5708; // Angle of tank
 
-        this.speed = 1;
+        this.speed = 2;
         this.dirX = 0;
         this.dirY = 0;
 
@@ -275,15 +282,25 @@ class Player {
         this.x += this.dirX * this.speed;
         this.y += this.dirY * this.speed;
 
+        //checking for walls collision
+        if (this.x < 0) this.x = 0;
+        else if (this.x > canvas.width) this.x = canvas.width - this.width;
+
+        if (this.y < 0) this.y = 0;
+        else if (this.y > canvas.height) this.y = canvas.height - this.height;
+
         this.draw();
     }
 
     draw() {
 
         //tank image
-        // ctx.beginPath();
+        ctx.beginPath();
         // if (this.player == 1) ctx.fillStyle = "blue";
         // else if (this.player == 2) ctx.fillStyle = "red";
+
+        // ctx.fillRect(this.x, this.y, this.width, this.height);
+        // ctx.fill();
 
         ctx.save();
         ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
@@ -298,45 +315,63 @@ class Player {
 
         ctx.restore();
 
-        // ctx.fillRect(this.x, this.y, this.width, this.height);
-        // ctx.fill();
-    }
-}
-
-class Npc {
-    constructor() {
 
     }
 }
-
 class Bullet {
     constructor(x, y, dirX, dirY, team) {
         this.x = x;
         this.y = y;
-        this.width = 4;
+        this.width = 10;
         this.height = this.width;
         this.team = team; //1 - P1, 2 - P2, 3 - NPC
 
-        this.speed = 3;
+        this.speed = 4;
+        this.expire = tick + (5 - this.speed) * 250;
+        this.isExpired = false;
         this.dirX = dirX;
         this.dirY = dirY;
 
     }
 
     update() {
+        //check if bullet is still alive
+        if (tick > this.expire) this.isExpired = true;
+
         this.x += this.dirX * this.speed;
         this.y += this.dirY * this.speed;
         this.draw();
+
     }
 
     draw() {
         ctx.beginPath()
-        ctx.fillStyle = "black";
+        ctx.fillStyle = "blue";
         ctx.rect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height);
         ctx.fill();
     }
 }
 
+class Wall {
+    constructor(x, y, w, h) {
+        this.x = x,
+            this.y = y,
+            this.width = w,
+            this.height = h;
+    }
+
+    update() {
+
+    }
+
+    draw() {
+        ctx.beginPath()
+
+        ctx.fillStyle = "rgba(0, 255, 0, 0.5)";
+        ctx.rect(this.x, this.y, this.width, this.height);
+        ctx.fill();
+    }
+}
 class Handler {
     constructor() {
     }
@@ -345,17 +380,18 @@ class Handler {
         for (let i = 0; i < bullets.length; i++) {
             bullets[i].update();
 
-            if (outsideCanvas(bullets[i].x, bullets[i].y, bullets[i].width, bullets[i].height)) {
+            if (outsideCanvas(bullets[i].x, bullets[i].y, bullets[i].width, bullets[i].height) ||
+                bullets[i].isExpired) {
                 bullets.splice(i, 1);
                 i--;
-                console.log("removed bullet");
+                // console.log("removed bullet");
                 continue;
             }
 
             //bullets overlaps players
             if (overlaps(bullets[i].x, bullets[i].y, bullets[i].width, bullets[i].height, player1.x, player1.y, player1.width, player1.height)) {
                 if (bullets[i].team != 1) {
-                    randomSpawn(player1);
+                    randomSpawn(player1, 1);
                     if (bullets[i].team == 2) hud.p2Points++;
                     bullets.splice(i, 1);
                     i--;
@@ -363,7 +399,7 @@ class Handler {
                 }
             } else if (overlaps(bullets[i].x, bullets[i].y, bullets[i].width, bullets[i].height, player2.x, player2.y, player2.width, player2.height)) {
                 if (bullets[i].team != 2) {
-                    randomSpawn(player2);
+                    randomSpawn(player2, 2);
                     if (bullets[i].team == 1) hud.p1Points++;
                     bullets.splice(i, 1);
                     i--;
@@ -373,96 +409,69 @@ class Handler {
 
             //if overlaps walls
             for (let w = 0; w < walls.length; w++) {
-                if (overlaps(bullets[i].x, bullets[i].y, bullets[i].width, bullets[i].height, walls[w].x, walls[w].y, walls[w].width, walls[w].height)) {
-                    bullets.splice(i, 1);
-                    i--;
-                    break;
+
+                //if bullets bouncing
+                if (menu.bulletBouncing) {
+                    let side = checkCollision(bullets[i], walls[w])
+                    if (side != undefined) {
+                        //     console.log(side);
+
+
+                        if (side == "left" || side == "right") {
+                            if ((bullets[i].x < walls[w].x + walls[w].width && bullets[i].x > walls[w].x) || //left
+                                (bullets[i].x + bullets[i].width > walls[w].x && bullets[i].x + bullets[i].width < walls[w].x + walls[w].width)) bullets[i].dirX *= -1 //right
+
+                        } else if (side == "top" || side == "bottom") {
+                            if ((bullets[i].y < walls[w].y + walls[w].height && bullets[i].y > walls[w].y) || //left
+                                (bullets[i].y + bullets[i].height > walls[w].y && bullets[i].y + bullets[i].height < walls[w].y + walls[w].height)) bullets[i].dirY *= -1 //right
+                        }
+
+                        //finding bounce angle
+                        // if (side == "left") {
+                        //     bullets[i].diry = -bullets[i].dirX;
+                        // } else if (side == "right") {
+                        //     bullets[i].dirX = -bullets[i].dirX;
+                        // } else if (side == "top") {
+                        //     bullets[i].dirY = -bullets[i].dirY;
+                        // } else if (side == "bottom") {
+                        //     bullets[i].dirY = -bullets[i].dirY;
+                        // }
+
+                    }
+
+                } else {
+                    //bullets gets removed apon impact with obsticle
+                    if (overlaps(bullets[i].x, bullets[i].y, bullets[i].width, bullets[i].height, walls[w].x, walls[w].y, walls[w].width, walls[w].height)) {
+                        bullets.splice(i, 1);
+                        i--;
+                        break;
+                    }
                 }
             }
-
         }
 
-        //if players
-
-
+        //if players collide with walls
         for (let w = 0; w < walls.length; w++) {
             walls[w].draw(); //updates walls
-            let ls = walls[w];
 
-            // let collision = checkCollision(player1.x, player1.y, player1.width, player1.height, walls[w].x, walls[w].y, walls[w].width, walls[w].height);
-            // if (collision == 1) player1.x = (walls[w].x - player1.width)//right
-            // else if (collision == 2) player1.x = (walls[w].x + walls[w].width)//right
+            for (let p = 0; p < 2; p++) {
+                let player;
+                if (p == 0) player = player1;
+                else player = player2;
 
-            // if (overlaps(player1.x, player1.y, player1.width, player1.height, walls[w].x, walls[w].y, walls[w].width, walls[w].height)) {
-            //     let xDis = player1.x + player1.width / 2 - walls[w].x + walls[w].width / 2;
-            //     let yDis = player1.y + player1.height / 2 - walls[w].y + walls[w].height / 2;
-            //     console.log("ovelaps");
-
-            //     if (Math.abs(xDis) < Math.abs(yDis)) {
-            //         if (xDis > 0) player1.y = walls[w].y + walls[w].height;//left collision //top
-
-            //         else if (xDis < 0) player1.x = walls[w].x - player1.width;//right collision
-            //     } else if (Math.abs(xDis) > Math.abs(yDis)) {
-            //         if (yDis > 0); //top collision
-            //         else if (yDis < 0) player1.y = walls[w].y - player1.width;//bottom collision
-
-            //         player1.x = walls[w].x + walls[w].width;//left collision
-            //     }
-            // }
-
-            if (player1.x + player1.width < ls.x + 5) {//on the left (player)
-                if (player1.x > ls.x - player1.width && //player width is touching
-                    player1.y > ls.y - player1.height && player1.y < ls.y + ls.height) {
-                    console.log("left");
-                    player1.x = ls.x - player1.width;
-
-                }
+                checkCollision(player, walls[w], true);
             }
-            else if (player1.x > ls.x + ls.width - 5) {//on the right (player)
-                if (player1.x < ls.x + ls.width && //player width is touching
-                    player1.y > ls.y - player1.height && player1.y < ls.y + ls.height) {
-                    console.log("right");
-                    player1.x = ls.x + ls.width + 1;
-                    if (player1.x == ls.x + ls.width) console.log("true");
-                }
-            }
-
-
-            if (player1.y + player1.height < ls.y + 5) { //top (player)
-                if (player1.y > ls.y - player1.height &&
-                    player1.x > ls.x - player1.width && player1.x < ls.x + ls.height) {
-                    console.log("top");
-                    player1.y = ls.y - player1.height;
-                }
-            }
-
-            else if (player1.y > ls.y + ls.height - 5) { //bottom (player)
-                if (player1.y < ls.y + ls.height && //player width is touching
-                    player1.x > ls.x - player1.width && player1.x < ls.x + ls.width) {
-                    console.log("Bottom");
-                    player1.y = ls.y + ls.height;
-                }
-            }
-
-            // if (player1.x >= ls.x && player1.x + player1.width <= ls.x + ls.width) {//width matches (bigger)
-            //     if (player1.y + player1.height >= ls.y && player1.y + player1.height < ls.y + ls.height) {
-            //         //bottom collision
-            //         console.log("bottom");
-
-            //     } else if (player1.y <= ls.y + ls.height && player1.y > ls.y) {
-            //         //top collision
-            //         console.log("top");
-
-            //     }
-            // }
         }
-
     }
 
     draw() {
 
     }
 }
+
+
+
+
 
 class Hud {
     constructor() {
@@ -489,6 +498,13 @@ class Hud {
         ctx.fillText("Red: " + this.p2Points, localX + 400, localY);
     }
 }
+class Npc {
+    constructor() {
+
+    }
+}
+
+
 
 setTimeout(function () {
     // canvas.style.cursor = "none"
@@ -554,6 +570,24 @@ function reset() {
 
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 let tankImage = new Image();
 tankImage.src = "tanks.png";
 
@@ -570,63 +604,105 @@ function overlaps(x, y, w, h, rX, rY, rW, rH) {
     } else return false;
 }
 
-// add colision for sidesssssssssssssssssssssssssssssssssssss
+//checks where the object is
+function checkCollision(object, reference, update = false) {
 
-//checks one side only for collision (in case of diffrent size obsticles)
-function checkCollision(x, y, w, h, x1, y1, w1, h1) {
+    if (object.x + object.width < reference.x + 5) {//on the left (object)
+        if (object.x > reference.x - object.width && //object width is touching
+            object.y > reference.y - object.height && object.y < reference.y + reference.height) {
+            if (update) object.x = reference.x - object.width;
+            return "left";
 
-    // if (x + w > rx && x + w < rx + rw) {//collision on the left (right for colider)
-    //     if (y + rh - Math.abs(y - ry) > y || y < ry && y + h > ry + rh) {
-    //         console.log("collision on right");
-    //     }
-
-    // }
-    // if (x < rx + rw && x > rx) {//collision on the right (left for colider)
-    //     if (y + rh - Math.abs(y - ry) > y || y < ry && y + h > ry + rh) {
-    //         console.log("collision on Left");
-    //     }
-    // }
-
-    // if (y + rh - Math.abs(y - ry) > y || y < ry && y + h > ry + rh) { //if height is matched
-    //     if (x + w > rx && x + w < rx + rw) {//collision on the left (right for colider)
-    //         console.log("collision on right");
-    //         return 1;
-    //     } else if (x < rx + rw && x > rx) {//collision on the right (left for colider)
-    //         console.log("collision on Left");
-    //         return 2;
-    //     }
-    // }
-
-    if ((y <= y1 && y + h >= y1 + h1) || (y > y1 && y + h < y1 + h1) || (y > y1 && y + h > y1 + h1 && y <= y1 + h1) || y < y1 && y + h < y1 + h1 && y + h >= y1) { //if height is matched
-        if ((x >= x1 && x + w <= x1 + w1) ||
-            (x < x1 && x + w > x1 + w1)) { //collision at the top (bottom for colider)
-            console.log("collision on Bottom");
-        }
-
-        else if (x + w > x1 && x + w < x1 + w1) {//collision on the left (right for colider)
-            console.log("collision on right");
-            return 1;
-        } else if (x < x1 + w1 && x > x1) {//collision on the right (left for colider)
-            console.log("collision on Left");
-            return 2;
         }
     }
 
+    else if (object.x > reference.x + reference.width - 5) {//on the right (object)
+        if (object.x < reference.x + reference.width && //object width is touching
+            object.y > reference.y - object.height && object.y < reference.y + reference.height) {
+            if (update) object.x = reference.x + reference.width;
+            return "right";
+        }
+    }
 
+    if (object.y + object.height < reference.y + 5) { //top (object)
+        if (object.y > reference.y - object.height &&
+            object.x > reference.x - object.width && object.x < reference.x + reference.width) {
+            if (update) object.y = reference.y - object.height;
+            return "top";
+        }
+    }
 
-    // if (y < ry + rh && y > ry) {//collision on buttom (top for colider)
-    //     if (x + rx - Math.abs(x - rx) > x || x < rx && x + w > rx + rx) {
-    //         console.log("collision on Top");
-    //     }
-    // }
-    // if (y+h > ry && y+h < ry+rh) { //collision on top (bottom for colider)
-
-    // }
+    else if (object.y > reference.y + reference.height - 5) { //bottom (object)
+        if (object.y < reference.y + reference.height && //object width is touching
+            object.x > reference.x - object.width && object.x < reference.x + reference.width) {
+            if (update) object.y = reference.y + reference.height;
+            return "bottom";
+        }
+    }
 }
 
+function randomSpawn(player, team) {
+    let intersects = false;
+    let otherPlayer;
 
+    if (team == 1) otherPlayer = player2;
+    else otherPlayer = player1;
 
-function randomSpawn(player) {
-    player.x = Math.floor(Math.random() * canvas.width - player.width);
-    player.y = Math.floor(Math.random() * canvas.height - player.height);
+    for (let i = 0; i < 2; i++) {
+        let randomX = Math.floor(Math.random() * canvas.width - player.width);
+        let randomY = Math.floor(Math.random() * canvas.height - player.height);
+
+        for (let w = 0; w < walls.length; w++) {
+            if (overlaps(randomX, randomY, player.width, player.height, walls[w].x, walls[w].y, walls[w].width, walls[w].height) ||
+                (checkDistance(randomX + player.width / 2, randomY + player.height / 2, otherPlayer.x + otherPlayer.width, otherPlayer.y + otherPlayer.height)) < canvas.width / 3) {
+                intersects = true;
+                break;
+            }
+        }
+
+        if (intersects) {
+            i--;
+            intersects = false;
+            continue;
+        } else {
+            player.x = randomX;
+            player.y = randomY;
+        }
+    }
 }
+
+function checkDistance(x, y, tx, ty) {
+    let dx = x - tx;
+    let dy = y - ty;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+// const map1 = [
+//     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+//     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+// ]
+
+
